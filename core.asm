@@ -41,8 +41,8 @@ core2	mov [ebx+edi*8+0], eax
 
 	mov eax, switch
 	call make_intr
-	mov [ebx+0x70*8+0], eax
-	mov [ebx+0x70*8+4], edx
+	mov [ebx+0x20*8+0], eax
+	mov [ebx+0x20*8+4], edx
 	lidt [idt]
 
 	mov eax, print
@@ -55,15 +55,6 @@ core2	mov [ebx+edi*8+0], eax
 	call setup_gdt
 	mov [task+12], ax
 	ltr ax
-
-	mov al, 0xb
-	out 0x70, al
-	mov al, 0x12
-	out 0x71, al
-
-	mov al, 0xfe
-	out 0xa1, al
-	call readc
 	sti
 
 	mov eax, task+4
@@ -221,12 +212,15 @@ stop	mov ch, 0xc
 	call far [gate]
 	hlt
 
-intr	call eoi
+intr	pusha
+	mov al, 0x20
+	out 0x20, al
+	popa
 	iret
 
 switch	pusha
-	call readc
-	call eoi
+	mov al, 0x20
+	out 0x20, al
 
 	mov eax, [list]
 	mov ebx, [eax]
@@ -234,13 +228,6 @@ switch	pusha
 	jmp far [ebx+8]
 	popa
 	iret
-
-eoi	push ax
-	mov al, 0x20
-	out 0x20, al
-	out 0xa0, al
-	pop ax
-	ret
 
 print	pusha
 print1	mov cl, [ebx]
@@ -306,13 +293,6 @@ show4	mov cx, ax
 	mov al, cl
 	out dx, al
 	popa
-	ret
-
-readc	push ax
-	mov al, 0xc
-	out 0x70, al
-	in al, 0x71
-	pop ax
 	ret
 
 reads	cli
